@@ -13,7 +13,7 @@ class Batch:
     sku: str
     quantity: int
 
-    def allocate(self, orderline: Orderline):
+    def allocate(self, orderline: Orderline) -> bool:
         if orderline.quantity <= self.quantity:
             self.quantity = self.quantity - orderline.quantity
             return True
