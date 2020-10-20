@@ -3,6 +3,10 @@ from datetime import date
 from typing import List, Optional, Set
 
 
+class OutOfStock(Exception):
+    pass
+
+
 @dataclass(frozen=True)
 class Orderline:
     sku: str
@@ -49,8 +53,12 @@ class Batch:
 
 
 def allocate(orderline: Orderline, batches: List[Batch]) -> str:
-    first_available_batch = next(
-        b for b in sorted(batches) if b.can_allocate(orderline)
+    try:
+        first_available_batch = next(
+            b for b in sorted(batches) if b.can_allocate(orderline)
+        )
+    except StopIteration:
+        raise OutOfStock(f"No stock available for {orderline.quantity} units of {orderline.sku}"
     )
     first_available_batch.allocate(orderline)
     return first_available_batch.id

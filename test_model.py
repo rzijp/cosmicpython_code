@@ -3,7 +3,7 @@ from typing import Tuple
 
 import pytest
 
-from model import Batch, Orderline, allocate
+from model import Batch, Orderline, OutOfStock, allocate
 
 today = date.today()
 tomorrow = today + timedelta(days=1)
@@ -80,3 +80,11 @@ def test_ignores_too_small_batch():
     allocate(orderline, [batch_in_stock_but_too_small, batch_late])
     assert batch_in_stock_but_too_small.available_quantity == 1
     assert batch_late.available_quantity == 0
+
+
+def test_out_of_stock():
+    batch_1 = Batch(id="1", sku="MEMORY", purchased_quantity=1)
+    batch_2 = Batch(id="2", sku="MEMORY", purchased_quantity=2)
+    orderline = Orderline(sku="MEMORY", quantity=3)
+    with pytest.raises(OutOfStock):
+        allocate(orderline, [batch_1, batch_2])
