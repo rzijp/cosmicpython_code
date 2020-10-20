@@ -88,3 +88,11 @@ def test_out_of_stock():
     orderline = Orderline(sku="MEMORY", quantity=3)
     with pytest.raises(OutOfStock):
         allocate(orderline, [batch_1, batch_2])
+
+
+def test_returns_allocated_batch_ref():
+    batch_1 = Batch(id="1", sku="MEMORY", purchased_quantity=2, eta=today)
+    batch_2 = Batch(id="2", sku="MEMORY", purchased_quantity=2, eta=tomorrow)
+    orderline = Orderline(sku="MEMORY", quantity=1)
+    ref = allocate(orderline, [batch_1, batch_2])
+    assert ref == batch_1.id
