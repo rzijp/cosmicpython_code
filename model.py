@@ -11,11 +11,13 @@ class Orderline:
 class Batch:
     id: str
     sku: str
-    quantity: int
+    available_quantity: int
 
-    def allocate(self, orderline: Orderline) -> bool:
-        if orderline.quantity <= self.quantity:
-            self.quantity = self.quantity - orderline.quantity
-            return True
-        else:
-            return False
+    def can_allocate(self, orderline: Orderline) -> bool:
+        return (
+            self.sku == orderline.sku and orderline.quantity <= self.available_quantity
+        )
+
+    def allocate(self, orderline: Orderline) -> None:
+        if self.can_allocate(orderline):
+            self.available_quantity = self.available_quantity - orderline.quantity
