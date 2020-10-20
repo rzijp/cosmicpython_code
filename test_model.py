@@ -10,11 +10,13 @@ tomorrow = today + timedelta(days=1)
 later = tomorrow + timedelta(days=10)
 
 
-def create_batch_and_orderline(sku: str, batch_quantity: int, orderline_quantity: int) -> Tuple[Batch, Orderline]:
+def create_batch_and_orderline(
+    sku: str, batch_quantity: int, orderline_quantity: int
+) -> Tuple[Batch, Orderline]:
     batch = Batch(id="123", sku=sku, available_quantity=batch_quantity)
     orderline = Orderline(sku=sku, quantity=orderline_quantity)
     return batch, orderline
-    
+
 
 def test_can_allocate_if_available_greater_than_required():
     large_batch, small_orderline = create_batch_and_orderline("RED CHAIR", 20, 2)
