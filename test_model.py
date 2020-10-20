@@ -13,7 +13,7 @@ later = tomorrow + timedelta(days=10)
 def create_batch_and_orderline(
     sku: str, batch_quantity: int, orderline_quantity: int
 ) -> Tuple[Batch, Orderline]:
-    batch = Batch(id="123", sku=sku, available_quantity=batch_quantity)
+    batch = Batch(id="123", sku=sku, purchased_quantity=batch_quantity)
     orderline = Orderline(sku=sku, quantity=orderline_quantity)
     return batch, orderline
 
@@ -41,9 +41,18 @@ def test_can_allocate_if_available_equal_to_required():
 
 
 def test_cannot_allocate_different_SKU():
-    batch = Batch("123", sku="GREEN TABLE", available_quantity=10)
+    batch = Batch("123", sku="GREEN TABLE", purchased_quantity=10)
     wrong_sku_orderline = Orderline(sku="RED CHAIR", quantity=2)
     assert batch.can_allocate(wrong_sku_orderline) is False
+
+
+def test_cannot_deallocate_unallocated_orderline():
+    batch, allocated_orderline = create_batch_and_orderline("GREEN TABLE", 10, 2)
+    unallocated_orderline = Orderline(sku="BLUE SOFA", quantity=1)
+    batch.allocate(allocated_orderline)
+    assert batch.available_quantity == 8
+    batch.deallocate(unallocated_orderline)
+    assert batch.available_quantity == 8
 
 
 @pytest.mark.xfail()

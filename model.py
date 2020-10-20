@@ -1,17 +1,19 @@
 from dataclasses import dataclass
+from typing import Set
 
 
-@dataclass()
+@dataclass(frozen=True)
 class Orderline:
     sku: str
     quantity: int
 
 
-@dataclass()
 class Batch:
-    id: str
-    sku: str
-    available_quantity: int
+    def __init__(self, id: str, sku: str, purchased_quantity: int) -> None:
+        self.id = id
+        self.sku = sku
+        self.purchased_quantity = purchased_quantity
+        self._orderlines = set()  # type: Set[Orderline]
 
     def can_allocate(self, orderline: Orderline) -> bool:
         return (
@@ -20,4 +22,16 @@ class Batch:
 
     def allocate(self, orderline: Orderline) -> None:
         if self.can_allocate(orderline):
-            self.available_quantity = self.available_quantity - orderline.quantity
+            self._orderlines.add(orderline)
+
+    def deallocate(self, orderline: Orderline) -> None:
+        if orderline in self._orderlines:
+            self._orderlines.remove(orderline)
+
+    @property
+    def allocated_quantity(self):
+        return sum([line.quantity for line in self._orderlines])
+
+    @property
+    def available_quantity(self):
+        return self.purchased_quantity - self.allocated_quantity
