@@ -3,7 +3,7 @@ from typing import Tuple
 
 import pytest
 
-from model import Batch, Orderline
+from model import Batch, Orderline, allocate
 
 today = date.today()
 tomorrow = today + timedelta(days=1)
@@ -55,11 +55,28 @@ def test_cannot_deallocate_unallocated_orderline():
     assert batch.available_quantity == 8
 
 
-@pytest.mark.xfail()
 def test_prefers_warehouse_batches_to_shipments():
-    pytest.fail("todo")
+    batch_in_stock = Batch(id="1", sku="BLACK DESK", purchased_quantity=2)
+    batch_in_shipment = Batch(id="2", sku="BLACK DESK", purchased_quantity=2, eta=today)
+    orderline = Orderline(sku="BLACK DESK", quantity=1)
+    allocate(orderline, [batch_in_shipment, batch_in_stock])
+    assert batch_in_stock.available_quantity == 1
+    assert batch_in_shipment.available_quantity == 2
 
 
-@pytest.mark.xfail()
 def test_prefers_earlier_batches():
-    pytest.fail("todo")
+    batch_early = Batch(id="1", sku="BLACK DESK", purchased_quantity=2, eta=tomorrow)
+    batch_late = Batch(id="2", sku="BLACK DESK", purchased_quantity=2, eta=later)
+    orderline = Orderline(sku="BLACK DESK", quantity=1)
+    allocate(orderline, [batch_late, batch_early])
+    assert batch_early.available_quantity == 1
+    assert batch_late.available_quantity == 2
+
+
+def test_ignores_too_small_batch():
+    batch_in_stock_but_too_small = Batch(id="1", sku="BLACK DESK", purchased_quantity=1)
+    batch_late = Batch(id="2", sku="BLACK DESK", purchased_quantity=2, eta=later)
+    orderline = Orderline(sku="BLACK DESK", quantity=2)
+    allocate(orderline, [batch_in_stock_but_too_small, batch_late])
+    assert batch_in_stock_but_too_small.available_quantity == 1
+    assert batch_late.available_quantity == 0

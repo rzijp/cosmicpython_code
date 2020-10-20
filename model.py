@@ -1,5 +1,6 @@
 from dataclasses import dataclass
-from typing import Set
+from datetime import date
+from typing import List, Optional, Set
 
 
 @dataclass(frozen=True)
@@ -9,10 +10,13 @@ class Orderline:
 
 
 class Batch:
-    def __init__(self, id: str, sku: str, purchased_quantity: int) -> None:
+    def __init__(
+        self, id: str, sku: str, purchased_quantity: int, eta: Optional[date] = None
+    ) -> None:
         self.id = id
         self.sku = sku
         self.purchased_quantity = purchased_quantity
+        self.eta = eta
         self._orderlines = set()  # type: Set[Orderline]
 
     def can_allocate(self, orderline: Orderline) -> bool:
@@ -35,3 +39,18 @@ class Batch:
     @property
     def available_quantity(self):
         return self.purchased_quantity - self.allocated_quantity
+
+    def __gt__(self, other):
+        if self.eta is None:
+            return False
+        if other.eta is None:
+            return True
+        return self.eta > other.eta
+
+
+def allocate(orderline: Orderline, batches: List[Batch]) -> str:
+    first_available_batch = next(
+        b for b in sorted(batches) if b.can_allocate(orderline)
+    )
+    first_available_batch.allocate(orderline)
+    return first_available_batch.id
