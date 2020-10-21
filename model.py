@@ -9,6 +9,7 @@ class OutOfStock(Exception):
 
 @dataclass(frozen=True)
 class Orderline:
+    order_id: str
     sku: str
     quantity: int
 
@@ -51,6 +52,11 @@ class Batch:
             return True
         return self.eta > other.eta
 
+    def __eq__(self, other):
+        if not(isinstance(other, type(self))):
+            return False
+        return self.id == other.id
+
 
 def allocate(orderline: Orderline, batches: List[Batch]) -> str:
     try:
@@ -58,7 +64,8 @@ def allocate(orderline: Orderline, batches: List[Batch]) -> str:
             b for b in sorted(batches) if b.can_allocate(orderline)
         )
     except StopIteration:
-        raise OutOfStock(f"No stock available for {orderline.quantity} units of {orderline.sku}"
-    )
+        raise OutOfStock(
+            f"No stock available for {orderline.quantity} units of {orderline.sku}"
+        )
     first_available_batch.allocate(orderline)
     return first_available_batch.id
