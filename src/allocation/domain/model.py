@@ -7,27 +7,29 @@ class OutOfStock(Exception):
     pass
 
 
-@dataclass(frozen=True)
+@dataclass(unsafe_hash=True)
 class Orderline:
-    order_id: str
+    orderid: str
     sku: str
-    quantity: int
+    qty: int
 
 
 class Batch:
     def __init__(
-        self, id: str, sku: str, purchased_quantity: int, eta: Optional[date] = None
+        self,
+        reference: str,
+        sku: str,
+        purchased_quantity: int,
+        eta: Optional[date] = None,
     ) -> None:
-        self.id = id
+        self.reference = reference
         self.sku = sku
-        self.purchased_quantity = purchased_quantity
+        self._purchased_quantity = purchased_quantity
         self.eta = eta
         self._orderlines = set()  # type: Set[Orderline]
 
     def can_allocate(self, orderline: Orderline) -> bool:
-        return (
-            self.sku == orderline.sku and orderline.quantity <= self.available_quantity
-        )
+        return self.sku == orderline.sku and orderline.qty <= self.available_quantity
 
     def allocate(self, orderline: Orderline) -> None:
         if self.can_allocate(orderline):
@@ -39,11 +41,14 @@ class Batch:
 
     @property
     def allocated_quantity(self):
-        return sum([line.quantity for line in self._orderlines])
+        return sum([line.qty for line in self._orderlines])
 
     @property
     def available_quantity(self):
-        return self.purchased_quantity - self.allocated_quantity
+        return self._purchased_quantity - self.allocated_quantity
+
+    def __hash__(self):
+        return hash(self.reference)
 
     def __gt__(self, other):
         if self.eta is None:
@@ -52,10 +57,10 @@ class Batch:
             return True
         return self.eta > other.eta
 
-    def __eq__(self, other):
-        if not(isinstance(other, type(self))):
+    def __eq__(self, other: "Batch"):
+        if not (isinstance(other, type(self))):
             return False
-        return self.id == other.id
+        return self.reference == other.reference
 
 
 def allocate(orderline: Orderline, batches: List[Batch]) -> str:
@@ -65,7 +70,7 @@ def allocate(orderline: Orderline, batches: List[Batch]) -> str:
         )
     except StopIteration:
         raise OutOfStock(
-            f"No stock available for {orderline.quantity} units of {orderline.sku}"
+            f"No stock available for {orderline.qty} units of {orderline.sku}"
         )
     first_available_batch.allocate(orderline)
-    return first_available_batch.id
+    return first_available_batch.reference
